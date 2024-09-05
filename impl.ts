@@ -2,6 +2,7 @@
 
 import { mapper, LagrangeContext, PrivateMessage, GroupMessage } from 'lagrange.onebot';
 import { DatabaseService } from './data'; 
+import { FSM } from './fsm'; 
 
 
 
@@ -33,30 +34,32 @@ export class Impl {
 
     @mapper.onGroup(789720073, { at: true })
     async handleTestGroup(c: LagrangeContext<GroupMessage>) {
-        var msg = c!.message.raw_message;
-        const msg_id = c!.message!.message_id.toString();
-        msg = msg.replace('name=@很可能是逆蝶]','').trim();
-        if(msg.startsWith('我是')){
-            const reply = msg.replace('我是','').trim();
-            c.sendMessage([
-                {
-                    type: 'reply',
-                    data: {
-                        id: msg_id
-                    }
-                },{
-                    type: 'text',
-                    data: {
-                        text: '好了，知道你是'+reply+'了'
-                    }
-                }
-            ]);
-            return;
-        }
-        const reply = '阁下刚刚的回答 ' + msg + ' 已经记录在案！';
-        const dbService = DatabaseService.getInstance();
-        await dbService.saveMessage(c.message.user_id, msg);
-        //c.sendGroupMsg(c!.message.group_id, reply);
+        const fms = FSM.getInstance();
+        const reply = await fms.evaluate(c!.message);
+        // var msg = c!.message.raw_message;
+        // const msg_id = c!.message!.message_id.toString();
+        // msg = msg.replace('name=@很可能是逆蝶]','').trim();
+        // if(msg.startsWith('我是')){
+        //     const reply = msg.replace('我是','').trim();
+        //     c.sendMessage([
+        //         {
+        //             type: 'reply',
+        //             data: {
+        //                 id: msg_id
+        //             }
+        //         },{
+        //             type: 'text',
+        //             data: {
+        //                 text: '好了，知道你是'+reply+'了'
+        //             }
+        //         }
+        //     ]);
+        //     return;
+        // }
+        // const reply = '阁下刚刚的回答 ' + msg + ' 已经记录在案！';
+        // const dbService = DatabaseService.getInstance();
+        // await dbService.saveMessage(c.message.user_id, msg);
+        // //c.sendGroupMsg(c!.message.group_id, reply);
         c.sendMessage(reply);
     }
 }
