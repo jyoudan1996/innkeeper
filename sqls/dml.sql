@@ -1,4 +1,5 @@
 insert into fsm_sts values(1614684804,'第四个暗牧', 0);
+insert into fsm_sts values(452788198,'率性野莓味', 0);
 
 insert into fsm_data values(0,0, '初始节点自循环', 'default','default_1','1',1);
 insert into fsm_data values(0,1, '初始节点到辱骂节点', 'curse','curse_start','1',5);
