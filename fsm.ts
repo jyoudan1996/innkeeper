@@ -13,15 +13,6 @@ export class FSM {
         return FSM.instance;
     }
 
-
-
-
-
-
-
-
-
-
     // 转换函数集合
     private transitions: { [key: string]: (...args: any[]) => Promise<boolean> } = {
 
@@ -45,7 +36,9 @@ export class FSM {
             var text = msg.raw_message;
             text = text.replace('name=@很可能是逆蝶]', '').trim();
             if (text.startsWith('我是')) {
-                const reply = text.replace('我是', '').trim();
+                const nickname = text.replace('我是', '').trim();
+                const dbService = DatabaseService.getInstance();
+                await dbService.execute("update fsm_sts set nick= $1 where qq=$2", [nickname, msg.user_id]);
                 return [
                     {
                         type: 'reply',
@@ -55,7 +48,7 @@ export class FSM {
                     }, {
                         type: 'text',
                         data: {
-                            text: '好了，知道你是' + reply + '了'
+                            text: '好了，知道你是' + nickname + '了'
                         }
                     }
                 ];
@@ -104,13 +97,44 @@ export class FSM {
     }
 
     public async evaluate(input: Lagrange.GroupMessage): Promise<(string | Lagrange.Send.Default[])> {
+        var reply = await this.evaluateCore(input);
+        console.log(typeof(reply));
+        if (typeof(reply) == 'string') {
+            console.log('reply is string');
+            reply = [
+                {
+                    type: 'reply',
+                    data: {
+                        id: input.message_id.toString()
+                    }
+                }, {
+                    type: 'text',
+                    data: {
+                        text: reply.toString()
+                    }
+                }
+            ];
+        }
+        return reply;
+    }
+
+    public async evaluateCore(input: Lagrange.GroupMessage): Promise<(string | Lagrange.Send.Default[])> {
         const qq = input.user_id;
         input.raw_message = input.raw_message.replace('name=@很可能是逆蝶]', '').trim();
         console.log(input.raw_message);
         console.log(input.user_id);
         const dbService = DatabaseService.getInstance();
+
+        ////首次和bot对话的逻辑
+        const fms_sts = await dbService.execute("select curr from fsm_sts where qq=$1", [qq]);
+        if (fms_sts.rowCount == 0) {
+            await dbService.execute("insert into fsm_sts values($1,$2,$3)", [qq, '', '0']);
+            console.log(`新用户qq: ${qq} 已注册`)
+        }
+
         const result = await dbService.execute("select * from fsm_data where curr=(select curr from fsm_sts where qq=$1) and sts='1' order by pri desc", [qq]);
         var match = false;
+
         for (const row of result.rows) {
             console.log(`状态: ${row.curr} -> ${row.nxt}, 条件: ${row.trans},动作: ${row.act}, 优先级: ${row.pri}`);
             var act = "";
@@ -132,11 +156,3 @@ export class FSM {
     }
 
 }
-
-class node {
-    private curr: number;
-    private next: number;
-
-
-}
-

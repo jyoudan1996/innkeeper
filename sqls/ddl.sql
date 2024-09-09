@@ -1,3 +1,10 @@
+create table messages(
+    id serial primary key,
+    user_id integer,
+    messages text,
+    timestamp timestamp default CURRENT_TIMESTAMP
+);
+
 create table fsm_data(
     curr integer,
     nxt integer,
